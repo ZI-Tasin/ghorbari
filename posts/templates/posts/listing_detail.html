@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+{# No custom template tag needed here as the view passes the specific instance #}
+
+{% block title %}
+    {% if listing.listing_type == "FlatListing" %}
+        Flat at: {{ listing.address }}
+    {% elif listing.listing_type == "GroupFormationPost" %}
+        Group Post by {{ listing.creator.username }} ({{ listing.description|truncatewords:5 }})
+    {% else %}
+        Listing Detail
+    {% endif %}
+    - GhorBari
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4"> 
+    <div class="card shadow-lg mb-4">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h4 mb-0">
+                    {% if listing.listing_type == "FlatListing" %}
+                        Flat at: {{ listing.address }}
+                    {% elif listing.listing_type == "GroupFormationPost" %}
+                        Group Post by {{ listing.creator.username }}
+                    {% else %}
+                        Listing Detail
+                    {% endif %}
+                </h1>
+                {% if listing.initial_images_finalized %}
+                    <span class="badge bg-success float-end mt-1">Initial Images Complete</span>
+                {% else %}
+                    {% if is_creator %} {# Only show pending to the creator #}
+                    <span class="badge bg-warning text-dark float-end mt-1">Pending Initial Image Setup</span>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <!-- Image Gallery Column -->
+                <div class="col-md-7 mb-3 mb-md-0">
+                    {% if listing.images.all %}
+                        <img id="mainImage" src="{{ listing.images.first.image.url }}" class="img-fluid rounded detail-img mb-3" alt="Main image for {{ listing.address|default:listing.description }}">
+                        {% if listing.images.count > 1 %}
+                        <div class="thumbnail-gallery d-flex flex-wrap">
+                            {% for img_obj in listing.images.all %}
+                            <img src="{{ img_obj.image.url }}" 
+                                 class="rounded me-2 mb-2 {% if forloop.first %}active-thumb{% endif %}" 
+                                 alt="Thumbnail {{ forloop.counter }}" 
+                                 onclick="changeMainImage('{{ img_obj.image.url }}', this)"
+                                 style="width: 100px; height: 75px; object-fit: cover; cursor: pointer; border: 2px solid transparent;">
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <img src="{% static 'images/placeholder_detail.png' %}" class="img-fluid rounded detail-img mb-3" alt="No image available">
+                    {% endif %}
+                </div>
+
+                <!-- Details Column -->
+                <div class="col-md-5">
+                    <h4 class="mb-3">Listing Details</h4>
+                    <p><strong>Posted by:</strong> {{ listing.creator.username }}</p>
+                    <p><strong>Description:</strong> {{ listing.description|linebreaksbr }}</p>
+                    <p><strong>Capacity / Group Size:</strong> {{ listing.size }} people</p>
+                    
+                    {% if listing.contact_number %}
+                    <p><strong>Contact:</strong> {{ listing.contact_number }}</p>
+                    {% endif %}
+
+                    {% if listing.listing_type == "FlatListing" %}
+                        <p><strong>Rent:</strong> BDT {{ listing.rent_amount|floatformat:2 }} per month</p>
+                        <p><strong>Elevator:</strong> {% if listing.has_elevator %}Yes{% else %}No{% endif %}</p>
+                    {% elif listing.listing_type == "GroupFormationPost" %}
+                        {% if listing.preferred_location_gfa %}
+                            <p><strong>Preferred Location:</strong> {{ listing.preferred_location_gfa }}</p>
+                        {% endif %}
+                        {% if listing.budget_per_person_gfa %}
+                            <p><strong>Budget per Person:</strong> BDT {{ listing.budget_per_person_gfa|floatformat:2 }}</p>
+                        {% endif %}
+                         {% if listing.members_needed_gfa %}
+                            <p><strong>Members Needed:</strong> {{ listing.members_needed_gfa }}</p>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <p class="text-muted small mt-3">
+                        Created: {{ listing.created_at|date:"F j, Y, P" }} <br>
+                        Last Updated: {{ listing.updated_at|timesince }} ago
+                    </p>
+                </div>
+            </div>
+
+            {% if is_creator %}
+                <hr class="my-4">
+                {# Conditional Image Upload and Finalize Section #}
+                {% if not listing.initial_images_finalized %}
+                    <h4 class="mb-3">Step 2: Add Images</h4> {# Added a heading for this step #}
+                    {% if image_upload_form %}
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <h3 class="h5 mb-0">Upload Images</h3>
+                        </div>
+                        <div class="card-body">
+                            <form method="post" 
+                                  action="{% url 'posts:upload_listing_image' pk=listing.pk %}" 
+                                  enctype="multipart/form-data">
+                                {% csrf_token %}
+                                {{ image_upload_form.as_p }}
+                                <button type="submit" class="btn btn-info mt-2">
+                                    {% if listing.images.all %}Upload & Add Another{% else %}Upload First Image{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if image_upload_form %}
+                        <form method="post" 
+                              action="{% if listing.listing_type == 'FlatListing' %}{% url 'posts:finalize_initial_flat_images' listing.pk %}
+                                      {% elif listing.listing_type == 'GroupFormationPost' %}{% url 'posts:finalize_initial_group_images' listing.pk %}{% endif %}" 
+                              class="d-inline mb-3">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Done Adding Initial Images</button>
+                        </form>
+                    {% endif %}
+                
+                {% else %} {# If initial_images_finalized is True, image setup is complete #}
+                    <div class="alert alert-info mt-3">Initial image setup is complete.</div>
+                    
+                    {# Edit and Delete buttons ONLY appear AFTER initial images are finalized #}
+                    <div class="mt-4 d-flex align-items-center"> 
+                        {% if listing.listing_type == 'FlatListing' %}
+                            <a href="{% url 'posts:update_flat_listing' listing.pk %}" class="btn btn-warning">Edit Listing</a>
+                            <a href="{% url 'posts:delete_flat_listing' listing.pk %}" class="btn btn-danger ms-2">Delete Listing</a>
+                        {% elif listing.listing_type == 'GroupFormationPost' %}
+                            <a href="{% url 'posts:update_group_post' listing.pk %}" class="btn btn-warning">Edit Post</a>
+                            <a href="{% url 'posts:delete_group_post' listing.pk %}" class="btn btn-danger ms-2">Delete Post</a>
+                        {% endif %}
+                    </div>
+                {% endif %} {# End of 'not listing.initial_images_finalized' / 'else' block #}
+            {% endif %} {# End of 'is_creator' block #}
+        </div> {# End of card-body for main listing details #}
+    </div> {# End of main card #}
+</div> {# End of container #}
+{% endblock %}
+
+{% block extra_scripts %}
+{% if listing.images.all and listing.images.count > 1 %}
+<script>
+function changeMainImage(newSrc, thumbElement) {
+    document.getElementById('mainImage').src = newSrc;
+    var thumbnails = document.querySelectorAll('.thumbnail-gallery img');
+    thumbnails.forEach(function(thumb) {
+        thumb.style.borderColor = 'transparent';
+    });
+    thumbElement.style.borderColor = '#007bff';
+}
+</script>
+{% endif %}
+{% endblock %}

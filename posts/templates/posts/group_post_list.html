@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Group Formation Ads - GhorBari{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Find or Form a Group for Your Next Flat!</h1>
+
+    {% if page_obj and page_obj.object_list %} {# Check if page_obj exists and has items #}
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            {% for post in page_obj %} {# Iterate over page_obj (which contains the posts for the current page) #}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">{{ post.title }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">Posted by: {{ post.creator.username }}</h6>
+                            <p class="card-text"><strong>Preferred Location:</strong> {{ post.preferred_location|default:"Not specified" }}</p>
+                            <p class="card-text"><strong>Budget per person:</strong> BDT {{ post.budget_per_person|default:"N/A" }}</p>
+                            <p class="card-text"><strong>Members Needed:</strong> {{ post.members_needed|default:"N/A" }}</p>
+                            <p class="card-text mt-2 flex-grow-1">{{ post.description|truncatewords:30 }}</p>
+                            <a href="{% url 'posts:group_post_detail' post.pk %}" class="btn btn-info mt-3 align-self-start">View Details & Connect</a>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Posted on: {{ post.created_at|date:"F d, Y" }}</small>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Pagination controls still use page_obj, which is correct #}
+        {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-5">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Previous</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Next</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <p class="lead">No group formation ads have been posted yet. Why not be the first?</p>
+        {% if user.is_authenticated and is_bracu_student_for_view %}
+             <p><a href="{% url 'posts:create_group_post' %}" class="btn btn-success">Create a Group Post</a></p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

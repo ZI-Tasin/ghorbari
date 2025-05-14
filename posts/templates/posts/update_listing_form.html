@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ form_title }} - GhorBari{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h2 class="h5 mb-0">{{ form_title }}</h2>
+                </div>
+                <div class="card-body">
+                    {# --- Form for FlatListing TEXT DETAILS --- #}
+                    {# This form's submit button will POST to the update_flat_listing view #}
+                    <form method="post" action="{% url 'posts:update_flat_listing' listing.pk %}">
+                        {% csrf_token %}
+                        <h4 class="mb-3">Edit Listing Details</h4>
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %} {{ error }} {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% for field in form %} {# This is the FlatListingForm #}
+                            <div class="mb-3">
+                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <small class="form-text text-muted d-block mt-1">{{ field.help_text|safe }}</small>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-warning w-100 mb-4">Save Text Changes</button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    {# --- Section to Display and DELETE EXISTING IMAGES --- #}
+                    <h4 class="mb-3">Manage Existing Images</h4>
+                    {% if listing.images.all %}
+                        <div class="row">
+                            {% for img_obj in listing.images.all %}
+                            <div class="col-md-4 col-6 mb-3 text-center">
+                                <img src="{{ img_obj.image.url }}" alt="{{ img_obj.caption|default:'Listing image' }}" class="img-thumbnail mb-2" style="max-height: 120px; object-fit: cover;">
+                                {% if img_obj.caption %}<p class="small text-muted">{{ img_obj.caption }}</p>{% endif %}
+                                {# Each delete button is its own small form posting to delete_listing_image #}
+                                <form method="post" action="{% url 'posts:delete_listing_image' image_pk=img_obj.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this image?');">Delete</button>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p>No images currently uploaded for this listing.</p>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    {# --- Section to UPLOAD NEW IMAGES --- #}
+                    {% if image_upload_form %} {# This is ListingImageForm from the view #}
+                    <h4 class="mb-3">Upload New Images</h4>
+                    {# This form posts to the upload_listing_image view #}
+                    <form method="post" action="{% url 'posts:upload_listing_image' pk=listing.pk %}" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ image_upload_form.as_p }}
+                        <button type="submit" class="btn btn-info w-100">Upload New Image</button>
+                    </form>
+                    {% endif %}
+
+                    <div class="mt-5 text-center">
+                        <a href="{% url 'posts:flat_listing_detail' listing.pk %}" class="btn btn-outline-secondary">Back to Listing Detail</a>
+                    </div>
+
+                </div> {# End card-body #}
+            </div> {# End card #}
+        </div> {# End col #}
+    </div> {# End row #}
+</div> {# End container #}
+{% endblock %}

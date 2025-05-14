@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+{# No {% load user_filters %} needed as we're using the context variable #}
+
+{% block title %}Welcome to GhorBari{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0"> {# Full-width for the top bar #}
+    <!-- Main Content Area -->
+    <div class="container mt-4">
+        <!-- Section 1: Featured/Latest Flat Listings -->
+        <section class="mb-5">
+            <h2 class="mb-3 h4">Latest Flat Listings</h2>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for listing in featured_flat_listings %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            {% if listing.image %}
+                                <img src="{{ listing.image.url }}" class="card-img-top listing-card-img" alt="{{ listing.title }}">
+                            {% else %}
+                                <img src="{% static 'images/default_flat.png' %}" class="card-img-top listing-card-img" alt="Default flat image">
+                            {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ listing.title }}</h5>
+                                <p class="card-text text-muted small">Location: {{ listing.location }}</p>
+                                <p class="card-text fw-bold">Rent: BDT {{ listing.rent }}</p>
+                                <a href="{% url 'posts:flat_listing_detail' listing.pk %}" class="btn btn-primary mt-auto stretched-link">View Details</a>
+                            </div>
+                            <div class="card-footer text-muted small">
+                                Posted by: {{ listing.creator.username }}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="col-12">
+                        <p class="text-muted">No featured flat listings at the moment.</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-4">
+                <a href="{% url 'flats' %}" class="btn btn-outline-secondary">View All Flat Listings</a>
+            </div>
+        </section>
+
+        <hr class="my-5">
+
+        <!-- Section 2: Featured/Latest Group Formation Ads -->
+        <section class="mb-5">
+            <h2 class="mb-3 h4">Latest Group Formation Ads</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                {% for group_post in featured_group_posts %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">{{ group_post.title }}</h5>
+                                <p class="card-text text-muted small">Seeking for: {{ group_post.preferred_location|default:"Any" }}</p>
+                                <p class="card-text">Target Budget: BDT {{ group_post.budget_per_person|default:"N/A" }}</p>
+                                <p class="card-text text-muted small">Members needed: {{ group_post.members_needed|default:"N/A" }}</p>
+                                <a href="{% url 'posts:group_post_detail' group_post.pk %}" class="btn btn-info mt-auto stretched-link">View Details</a>
+                            </div>
+                             <div class="card-footer text-muted small">
+                                Posted by: {{ group_post.creator.username }}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                     <div class="col-12">
+                        <p class="text-muted">No group formation ads at the moment.</p>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="text-center mt-4">
+                <a href="{% url 'posts:group_post_list' %}" class="btn btn-outline-secondary">View All Group Formation Ads</a>
+            </div>
+        </section>
+
+        <hr class="my-5">
+
+        <!-- Section 3: Create Listing Link -->
+        <section class="text-center mb-5">
+            <h2 class="mb-4 h4">What would you like to do?</h2>
+            {% if user.is_authenticated %}
+                <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                    {# This button is for any authenticated user (student or landlord) #}
+                    <a href="{% url 'posts:create_flat_listing' %}" class="btn btn-success btn-lg px-4 gap-3">Offer a Flat</a>
+                    
+                    {# These buttons are only for authenticated BracU Students #}
+                    {% if is_bracu_student_for_view %}
+                        <a href="{% url 'posts:create_group_post' %}" class="btn btn-info btn-lg px-4">Form a Group</a>
+                        <a href="{% url 'posts:group_post_list' %}" class="btn btn-primary btn-lg px-4">Find an Existing Group</a>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p>
+                    <a href="{% url 'users:login' %}?next={% url 'landing_home' %}" class="btn btn-success btn-lg px-4">Login to Get Started</a>
+                    {# Or you could have separate Login to Offer Flat / Login to Form Group if you prefer #}
+                    {# For example: #}
+                    {# <a href="{% url 'users:login' %}?next={% url 'posts:create_flat_listing' %}" class="btn btn-success btn-lg me-2">Login to Offer a Flat</a> #}
+                    {# <a href="{% url 'users:login' %}?next={% url 'posts:create_group_post' %}" class="btn btn-info btn-lg">Login to Form a Group</a> #}
+                </p>
+            {% endif %}
+        </section>
+
+    </div> {# End of .container mt-4 #}
+</div> {# End of .container-fluid px-0 #}
+{% endblock %}

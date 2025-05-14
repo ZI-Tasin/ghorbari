@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ listing_type_plural }} - GhorBari{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Filters Column -->
+    <div class="col-lg-3 mb-4">
+        <h4>Filters</h4>
+        <form method="get" class="card p-3">
+            
+            <div class="mb-3">
+                <label for="{{ filter_form.min_rent.id_for_label }}" class="form-label">{{ filter_form.min_rent.label }}</label>
+                {{ filter_form.min_rent }}
+                {% if filter_form.min_rent.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in filter_form.min_rent.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ filter_form.max_rent.id_for_label }}" class="form-label">{{ filter_form.max_rent.label }}</label>
+                {{ filter_form.max_rent }}
+                 {% if filter_form.max_rent.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in filter_form.max_rent.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            {% if filter_form.errors.min_rent or filter_form.errors.max_rent %}
+                {% for error in filter_form.non_field_errors %}
+                     <div class="alert alert-danger p-2 mb-2">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+
+
+            <div class="mb-3">
+                <label for="{{ filter_form.has_elevator.id_for_label }}" class="form-label">{{ filter_form.has_elevator.label }}</label>
+                {{ filter_form.has_elevator }}
+            </div>
+
+            <div class="mb-3">
+                <label for="{{ filter_form.sort_by.id_for_label }}" class="form-label">{{ filter_form.sort_by.label }}</label>
+                {{ filter_form.sort_by }}
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+            <a href="{% url 'posts:flat_listing_list' %}" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+        </form>
+    </div>
+
+    <!-- Listings Column -->
+    <div class="col-lg-9">
+        <h2>{{ listing_type_plural }} ({{ page_obj.paginator.count }})</h2>
+        <hr>
+        {% if page_obj %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for listing in page_obj %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        {% if listing.images.first %}
+                            <img src="{{ listing.images.first.image.url }}" class="card-img-top listing-card-img" alt="{{ listing.address }}">
+                        {% else %}
+                            <img src="{% static 'images/placeholder_flat.png' %}" class="card-img-top listing-card-img" alt="No image available">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ listing.address|truncatechars:50 }}</h5>
+                            <p class="card-text text-muted small">By: {{ listing.creator.username }}</p>
+                            <p class="card-text"><strong>Rent:</strong> BDT {{ listing.rent_amount|floatformat:2 }}</p>
+                            <p class="card-text"><strong>Size:</strong> For {{ listing.size }} people</p>
+                            <p class="card-text"><strong>Elevator:</strong> {% if listing.has_elevator %}Yes{% else %}No{% endif %}</p>
+                        </div>
+                        <div class="card-footer bg-transparent border-top-0">
+                             <a href="{% url 'posts:flat_listing_detail' pk=listing.pk %}" class="btn btn-outline-primary btn-sm w-100">View Details</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">« First</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">« First</span></li>
+                        <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Last »</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">Next</span></li>
+                        <li class="page-item disabled"><span class="page-link">Last »</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        {% else %}
+            <p>No flat listings found matching your criteria. Try adjusting your filters or <a href="{% url 'posts:flat_listing_list' %}">view all listings</a>.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

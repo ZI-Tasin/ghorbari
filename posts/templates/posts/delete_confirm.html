@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Confirm Delete{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h2 class="h5 mb-0">Confirm Deletion</h2>
+                </div>
+                <div class="card-body">
+                    <p>Are you sure you want to delete the {{ listing_type_display }}:</p>
+                    {% if listing.listing_type == "FlatListing" %}
+                        <p><strong>Address:</strong> {{ listing.address }}</p>
+                    {% elif listing.listing_type == "GroupFormationPost" %}
+                        <p><strong>Description:</strong> {{ listing.description|truncatewords:15 }}</p>
+                    {% endif %}
+                    <p class="text-danger">This action cannot be undone.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                        <a href="{% if listing.listing_type == 'FlatListing' %}{% url 'posts:flat_listing_detail' listing.pk %}{% elif listing.listing_type == 'GroupFormationPost' %}{% url 'posts:group_post_detail' listing.pk %}{% endif %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
